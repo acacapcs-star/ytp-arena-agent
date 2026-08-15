@@ -49,6 +49,10 @@ combinations, the key four-way combinations, and which ideas never made it into 
 final build — is recorded in
 **[the strategy design document](docs/strategy-design.md)** (in Chinese).
 
+The five-day ranking trajectory, what changed in each version, and one experiment that
+failed (zig zag), are recorded in **[the development log](docs/development-log.md)**
+(in Chinese).
+
 Intermediate versions are preserved under **[`versions/`](versions/)**: from eight
 standalone modules (38–84 lines each), through a 1,329-line merge, to the final 3,022
 lines. One step in that chain *removes* lines — not every commit should add something.
