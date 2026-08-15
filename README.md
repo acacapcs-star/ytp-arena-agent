@@ -49,6 +49,10 @@ combinations, the key four-way combinations, and which ideas never made it into 
 final build — is recorded in
 **[the strategy design document](docs/strategy-design.md)** (in Chinese).
 
+Intermediate versions are preserved under **[`versions/`](versions/)**: from eight
+standalone modules (38–84 lines each), through a 1,329-line merge, to the final 3,022
+lines. One step in that chain *removes* lines — not every commit should add something.
+
 ---
 
 ## Core design
