@@ -65,6 +65,65 @@ That decision is split into four layers:
 scenario detection → candidate filtering → route planning (beam search) → control (MPC)
 ```
 
+
+---
+
+## Architecture
+
+```mermaid
+flowchart TD
+    T["每個 tick<br/>state arrives"] --> S{"Scenario detection<br/>_update_scenario_profile"}
+
+    S -->|"0 obstacles"| P1["open<br/>pure racing"]
+    S -->|"15 + spawns 5,5 / 95,95"| P2["trap<br/>dense obstacles"]
+    S -->|"≥18 + specific spawns"| P3["gravity_seed1"]
+    S -->|"≥18 + other spawns"| P4["gravity_seed7"]
+    S -->|"none"| P5["generic<br/>conservative"]
+
+    P1 --> F["Candidate filtering"]
+    P2 --> F
+    P3 --> F
+    P4 --> F
+    P5 --> F
+
+    F --> F1["Closed-form ETA<br/>_estimate_eta_fast"]
+    F1 --> F2["Take top K"]
+    F2 --> F3["Add cluster candidates<br/>another chest nearby"]
+    F3 --> F4["Add route-memory candidates<br/>last round's target"]
+
+    F4 --> B["Route planning · beam search<br/>_choose_rollout_next_targets"]
+
+    subgraph OPP["Opponent model"]
+        O1["Simulate opponent captures<br/>_simulate_opponent_captures"]
+        O2["Predict opponent path<br/>_predict_opponent_path"]
+        O3["Race penalty<br/>heavy discount if they arrive first"]
+        O4["Blocking bonus<br/>extra for taking it just before them"]
+    end
+
+    O1 --> B
+    O2 --> B
+    O3 --> B
+    O4 --> B
+
+    B --> B1["Expand up to 4 chests<br/>beam width 4"]
+    B1 --> B2["Physically simulate each route<br/>_simulate_plan"]
+    B2 --> B3{"Endgame?"}
+    B3 -->|"few chests left"| B4["beam width 8<br/>longer horizon<br/>exact mode"]
+    B3 -->|"no"| B5["normal mode"]
+    B4 --> B6["Score on discounted total"]
+    B5 --> B6
+
+    B6 --> M["Control refinement · MPC<br/>_mpc_refine_acceleration"]
+
+    M --> M1["Enumerate accelerations<br/>forward · brake · lateral"]
+    M1 --> M2["Simulate each a few steps"]
+    M2 --> M3["Handle wall bounces<br/>collisions · gravity drift"]
+    M3 --> OUT["Output ax, ay"]
+
+    OUT --> T
+```
+
+
 ### 1 · Scenario detection
 
 `_update_scenario_profile()`

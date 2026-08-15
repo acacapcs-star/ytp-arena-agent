@@ -57,6 +57,65 @@ Agent 每個 tick 要決定一件事：**現在該往哪個方向加速。**
 場景辨識 → 候選篩選 → 路線規劃（beam search）→ 控制修正（MPC）
 ```
 
+
+---
+
+## 架構圖
+
+```mermaid
+flowchart TD
+    T["每個 tick<br/>state 進來"] --> S{"場景辨識<br/>_update_scenario_profile"}
+
+    S -->|"障礙 0"| P1["open<br/>純競速"]
+    S -->|"15 個 + 起點 5,5 / 95,95"| P2["trap<br/>密集障礙"]
+    S -->|"≥18 個 + 特定起點"| P3["gravity_seed1"]
+    S -->|"≥18 個 + 另一組起點"| P4["gravity_seed7"]
+    S -->|"皆非"| P5["generic<br/>保守通用"]
+
+    P1 --> F["候選篩選"]
+    P2 --> F
+    P3 --> F
+    P4 --> F
+    P5 --> F
+
+    F --> F1["閉式解快速估 ETA<br/>_estimate_eta_fast"]
+    F1 --> F2["取前 K 名"]
+    F2 --> F3["加入群聚候選<br/>附近還有下一顆"]
+    F3 --> F4["加入路線記憶候選<br/>上一輪選過的目標"]
+
+    F4 --> B["路線規劃 beam search<br/>_choose_rollout_next_targets"]
+
+    subgraph OPP["對手模型"]
+        O1["模擬對手會吃哪幾顆<br/>_simulate_opponent_captures"]
+        O2["預測對手軌跡<br/>_predict_opponent_path"]
+        O3["競速懲罰<br/>對手先到則大幅折減"]
+        O4["阻擋加成<br/>搶在對手前面加分"]
+    end
+
+    O1 --> B
+    O2 --> B
+    O3 --> B
+    O4 --> B
+
+    B --> B1["展開最多 4 顆<br/>beam width 4"]
+    B1 --> B2["每條路線物理模擬<br/>_simulate_plan"]
+    B2 --> B3{"殘局?"}
+    B3 -->|"剩餘寶箱少"| B4["beam width 8<br/>時距拉長<br/>精確模式"]
+    B3 -->|"否"| B5["一般模式"]
+    B4 --> B6["折現總收益評分"]
+    B5 --> B6
+
+    B6 --> M["控制修正 MPC<br/>_mpc_refine_acceleration"]
+
+    M --> M1["列舉候選加速度<br/>直衝 · 煞車 · 左右偏移"]
+    M1 --> M2["各自向前模擬數步"]
+    M2 --> M3["處理牆面反彈<br/>障礙碰撞 · 重力偏移"]
+    M3 --> OUT["輸出 ax, ay"]
+
+    OUT --> T
+```
+
+
 ### 一、場景辨識
 
 `_update_scenario_profile()`
