@@ -203,6 +203,31 @@ beam width 4（殘局擴大到 8）。每條路線都跑一次物理模擬，計
 
 ---
 
+## 測試
+
+```bash
+python -m pytest tests/ -v
+# 或不裝 pytest：
+python tests/test_strategy.py
+```
+
+**32 個單元測試，涵蓋五個核心計算函式**，不需要對戰環境即可執行（0.001 秒跑完）。
+測試針對的是整個 Agent 的計算基礎——這些函式一旦算錯，上層的 beam search
+與 MPC 都會建立在錯誤的數字上。
+
+| 受測函式 | 驗證重點 |
+|---|---|
+| `_time_to_cover_1d` | 對照閉式解 `t = √(2d/a)`；加速段與等速段的分界；初速夾制；距離單調性 |
+| `_clamp_vector` | 縮放後長度正確、**方向角完全不變**；極小向量回傳零而非放大成任意方向 |
+| `_capture_gap_between_chests` | 捕獲區重疊時夾到 0 而非負值；對稱性；船體半徑的影響 |
+| `_chest_key` | 浮點雜訊不讓同一顆寶箱被當成兩顆；鍵必須可雜湊 |
+| `_point_near` | 容差邊界；**兩軸都要符合**（只有一軸接近會誤判成別張地圖） |
+
+`strategy.py` 需要 import 主辦提供的 `pirate_client`，本 repo 未收錄，
+因此測試檔在 import 前注入一個最小替身，讓純函式可以獨立測試。
+
+---
+
 ## 技術架構
 
 Python 3.11 · Docker · `websockets`

@@ -228,6 +228,32 @@ A few judgements worth recording:
 
 ---
 
+## Tests
+
+```bash
+python -m pytest tests/ -v
+# or without pytest:
+python tests/test_strategy.py
+```
+
+**32 unit tests across five core computation functions**, runnable without the arena
+environment (0.001s). These target the numerical foundation of the agent — if any of
+them is wrong, the beam search and MPC above are built on bad numbers.
+
+| Function under test | What is verified |
+|---|---|
+| `_time_to_cover_1d` | Against the closed form `t = √(2d/a)`; the accelerate/cruise boundary; initial-speed clamping; monotonicity in distance |
+| `_clamp_vector` | Correct length after scaling and **an exactly preserved direction**; near-zero vectors return zero rather than blowing up into an arbitrary heading |
+| `_capture_gap_between_chests` | Clamps to 0 rather than going negative when capture zones overlap; symmetry; ship-radius effect |
+| `_chest_key` | Floating-point noise must not split one chest into two; keys must be hashable |
+| `_point_near` | Tolerance boundaries; **both axes must match** (a single-axis match would misidentify the map) |
+
+`strategy.py` imports the organiser-provided `pirate_client`, which is not included in
+this repo, so the test file injects a minimal stub before importing — letting the pure
+functions be tested in isolation.
+
+---
+
 ## Stack
 
 Python 3.11 · Docker · `websockets`
