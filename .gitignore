@@ -2,3 +2,6 @@
 __pycache__/
 *.pyc
 *.zip
+rl/*.pt
+rl/__pycache__/
+rl/*.txt
